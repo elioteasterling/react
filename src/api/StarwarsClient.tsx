@@ -10,45 +10,46 @@ import { useState } from 'react'
 import { getPerson } from './StarwarsService'
 
 // Create a client
-const queryClient = new QueryClient()
+const queryClient        = new QueryClient()
 const queryKey: string[] = ['starwarsPerson']
 
 export function StarwarsPersonDisplayer() {
     return (
         // Provide the client to your App
         <QueryClientProvider client={queryClient}>
-            <StarwarsPerson />
+            <StarwarsPeople />
         </QueryClientProvider>
     )
 }
 
-const mf: MutationFunction<any, any> = async (variables: any) => await variables()
+const mutationFn: MutationFunction<any, any> = async (variables: any) => await variables()
 
-function StarwarsPerson() {
+function StarwarsPeople() {
     // Form State
-    const [v, setV] = useState('')
+    const [input, setInput] = useState('')
     // Access the client
     const queryClient = useQueryClient()
     // Queries
-    const query = useQuery({ queryKey, queryFn: async () => await getPerson(Number(v)) as any})
+    const { isError, isLoading, data, error } = useQuery({ queryKey, queryFn: async () => await getPerson(Number(input))})
     // Mutations
     const mutation = useMutation({
-        mutationFn: mf,
+        mutationFn,
         onSuccess: () => {
             // Invalidate and refetch
             queryClient.invalidateQueries({ queryKey })
         },
     })
 
+    if (isLoading) return <span>Loading...</span>
+    if (isError)   return <span>Error: {(error as any).message}</span>
+
     return (
         <div>
             <ul>
-                {query.data?.map((sw: any) => (
-                    <li key={sw.id}>{sw.title}</li>
-                ))}
+                {data && <li key={data.name}>{data.name.toLocaleUpperCase()}</li>}
             </ul>
 
-            <input type="number" value={v} onChange={(e) => setV(e.target.value)} />
+            <input type="number" value={input} onChange={(e) => setInput(e.target.value)} />
 
             <button
                 onClick={() => {
